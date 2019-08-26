@@ -1,9 +1,8 @@
+#![forbid(unsafe_code)]
 #![cfg_attr(not(test), no_std)]
 
 use core::cell::Cell;
-use core::mem::ManuallyDrop;
 use core::ops::{Deref, DerefMut};
-use core::ptr;
 
 pub trait PawnExt {
     type Inner;
@@ -17,7 +16,7 @@ impl<T> PawnExt for Cell<T> {
     fn pawn_with(&self, temp: Self::Inner) -> Ticket<'_, Self::Inner> {
         Ticket {
             cell: self,
-            value: ManuallyDrop::new(self.replace(temp)),
+            value: self.replace(temp),
         }
     }
 }
@@ -25,7 +24,7 @@ impl<T> PawnExt for Cell<T> {
 #[derive(Clone)]
 pub struct Ticket<'a, T> {
     cell: &'a Cell<T>,
-    value: ManuallyDrop<T>,
+    value: T,
 }
 
 impl<T> Deref for Ticket<'_, T> {
@@ -43,9 +42,7 @@ impl<T> DerefMut for Ticket<'_, T> {
 
 impl<T> Drop for Ticket<'_, T> {
     fn drop(&mut self) {
-        // Safe because we're in the destructor and don't use it after this
-        let value = unsafe { ManuallyDrop::into_inner(ptr::read(&mut self.value)) };
-        self.cell.replace(value);
+        self.cell.swap(Cell::from_mut(&mut self.value));
     }
 }
 

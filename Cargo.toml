@@ -1,6 +1,6 @@
 [package]
 name = "pawn"
-version = "0.9.0"
+version = "0.9.1"
 authors = ["scottmcm"]
 edition = "2018"
 description = "An unchecked borrow-like operation for Cells."
